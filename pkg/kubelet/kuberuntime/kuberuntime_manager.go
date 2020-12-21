@@ -896,6 +896,8 @@ func (m *kubeGenericRuntimeManager) SyncPod(pod *v1.Pod, podStatus *kubecontaine
 		}
 		wg.Wait()
 
+		migResult.DeleteCheckpoint()
+
 		return
 	}
 

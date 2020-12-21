@@ -65,3 +65,10 @@ func getHTTPClient() (*http.Client, error) {
 	c.Transport = &http.Transport{TLSClientConfig: tlsConfig}
 	return c, nil
 }
+
+
+func (r *Result) DeleteCheckpoint() {
+	if err := os.RemoveAll(r.Path); err != nil {
+		klog.Error("failed to delete checkpoint", err)
+	}
+}

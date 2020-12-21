@@ -49,6 +49,7 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 	endpointutil "k8s.io/kubernetes/pkg/controller/util/endpoint"
 	"k8s.io/kubernetes/pkg/features"
+	"k8s.io/kubernetes/pkg/kubelet/migration"
 	utillabels "k8s.io/kubernetes/pkg/util/labels"
 	utilnet "k8s.io/utils/net"
 )
@@ -422,7 +423,7 @@ func (e *EndpointController) syncService(key string) error {
 			klog.V(5).Infof("Failed to find an IP for pod %s/%s", pod.Namespace, pod.Name)
 			continue
 		}
-		if !tolerateUnreadyEndpoints && pod.DeletionTimestamp != nil {
+		if !tolerateUnreadyEndpoints && pod.DeletionTimestamp != nil && !migration.HasFinalizer(pod) {
 			klog.V(5).Infof("Pod is being deleted %s/%s", pod.Namespace, pod.Name)
 			continue
 		}

@@ -250,9 +250,14 @@ func (m *kubeGenericRuntimeManager) restoreContainer(podSandboxConfig *runtimeap
 	container := spec.container
 
 	// restore the container.
-	err := m.runtimeService.RestoreContainer(containerID, &runtimeapi.RestoreContainerOptions{
-		CheckpointPath: checkpointPath,
-	})
+	retryCount := 3
+	err := errors.New("")
+	for retryCount > 0 && err != nil {
+		retryCount--
+		err = m.runtimeService.RestoreContainer(containerID, &runtimeapi.RestoreContainerOptions{
+			CheckpointPath: checkpointPath,
+		})
+	}
 	if err != nil {
 		s, _ := grpcstatus.FromError(err)
 		m.recordContainerEvent(pod, container, containerID, v1.EventTypeWarning, events.FailedToStartContainer, "Error: %v", s.Message())
@@ -309,9 +314,15 @@ func (m *kubeGenericRuntimeManager) prepareMigrateContainer(container *v1.Contai
 	}
 
 	checkpointPath := path.Join(options.CheckpointsDir, container.Name)
-	return m.runtimeService.CheckpointContainer(containerStatus.ID.ID, &runtimeapi.CheckpointContainerOptions{
-		CheckpointPath: checkpointPath,
-	})
+	retryCount := 3
+	err := errors.New("")
+	for retryCount > 0 && err != nil {
+		retryCount--
+		err = m.runtimeService.CheckpointContainer(containerStatus.ID.ID, &runtimeapi.CheckpointContainerOptions{
+			CheckpointPath: checkpointPath,
+		})
+	}
+	return err
 }
 
 // generateContainerConfig generates container config for kubelet runtime v1.

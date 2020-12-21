@@ -56,6 +56,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/envvars"
 	"k8s.io/kubernetes/pkg/kubelet/eviction"
 	"k8s.io/kubernetes/pkg/kubelet/images"
+	"k8s.io/kubernetes/pkg/kubelet/migration"
 	"k8s.io/kubernetes/pkg/kubelet/status"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/kubelet/util"
@@ -898,7 +899,7 @@ func (kl *Kubelet) podAndContainersAreTerminal(pod *v1.Pod) (containersTerminal,
 	containersTerminal = notRunning(status.ContainerStatuses)
 	// The kubelet must accept config changes from the pod spec until it has reached a point where changes would
 	// have no effect on any running container.
-	podWorkerTerminal = status.Phase == v1.PodFailed || status.Phase == v1.PodSucceeded || (pod.DeletionTimestamp != nil && containersTerminal)
+	podWorkerTerminal = status.Phase == v1.PodFailed || status.Phase == v1.PodSucceeded || (pod.DeletionTimestamp != nil && containersTerminal && !migration.HasFinalizer(pod))
 	return
 }
 
@@ -934,7 +935,7 @@ func (kl *Kubelet) IsPodDeleted(uid types.UID) bool {
 	if !statusFound {
 		status = pod.Status
 	}
-	return eviction.PodIsEvicted(status) || (pod.DeletionTimestamp != nil && notRunning(status.ContainerStatuses))
+	return eviction.PodIsEvicted(status) || (pod.DeletionTimestamp != nil && notRunning(status.ContainerStatuses) && !migration.HasFinalizer(pod))
 }
 
 // PodResourcesAreReclaimed returns true if all required node-level resources that a pod was consuming have

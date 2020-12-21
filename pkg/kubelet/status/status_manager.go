@@ -35,6 +35,7 @@ import (
 	"k8s.io/klog/v2"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
+	"k8s.io/kubernetes/pkg/kubelet/migration"
 	kubepod "k8s.io/kubernetes/pkg/kubelet/pod"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
@@ -614,7 +615,7 @@ func (m *manager) needsUpdate(uid types.UID, status versionedPodStatus) bool {
 }
 
 func (m *manager) canBeDeleted(pod *v1.Pod, status v1.PodStatus) bool {
-	if pod.DeletionTimestamp == nil || kubetypes.IsMirrorPod(pod) {
+	if pod.DeletionTimestamp == nil || kubetypes.IsMirrorPod(pod) || migration.HasFinalizer(pod) {
 		return false
 	}
 	return m.podDeletionSafety.PodResourcesAreReclaimed(pod, status)

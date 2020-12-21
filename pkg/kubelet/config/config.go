@@ -30,6 +30,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/checkpointmanager"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/events"
+	"k8s.io/kubernetes/pkg/kubelet/migration"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	"k8s.io/kubernetes/pkg/util/config"
@@ -475,16 +476,8 @@ func checkAndUpdatePod(existing, ref *v1.Pod) (needUpdate, needReconcile, needGr
 	existing.Finalizers = ref.Finalizers
 	updateAnnotations(existing, ref)
 
-	hasMigrationFinalizer := false
-	for _, f := range ref.Finalizers {
-		if f == "podmig.schrej.net/Migrate" {
-			hasMigrationFinalizer = true
-			break
-		}
-	}
-
 	// 2. this is an graceful delete
-	if ref.DeletionTimestamp != nil && !hasMigrationFinalizer {
+	if ref.DeletionTimestamp != nil && !migration.HasFinalizer(ref) {
 		needGracefulDelete = true
 	} else {
 		// 3. this is an update

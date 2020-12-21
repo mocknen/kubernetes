@@ -1520,16 +1520,8 @@ func (kl *Kubelet) syncPod(o syncPodOptions) error {
 	// Update status in the status manager
 	kl.statusManager.SetPodStatus(pod, apiPodStatus)
 
-	hasMigrationFinalizer := false
-	for _, f := range pod.Finalizers {
-		if f == "podmig.schrej.net/Migrate" {
-			hasMigrationFinalizer = true
-			break
-		}
-	}
-
 	// Kill pod if it should not be running
-	if !runnable.Admit || (pod.DeletionTimestamp != nil && !hasMigrationFinalizer) || apiPodStatus.Phase == v1.PodFailed {
+	if !runnable.Admit || (pod.DeletionTimestamp != nil && !migration.HasFinalizer(pod)) || apiPodStatus.Phase == v1.PodFailed {
 		var syncErr error
 		if err := kl.killPod(pod, nil, podStatus, nil); err != nil {
 			kl.recorder.Eventf(pod, v1.EventTypeWarning, events.FailedToKillPod, "error killing pod: %v", err)
@@ -1967,7 +1959,7 @@ func (kl *Kubelet) syncLoopIteration(configCh <-chan kubetypes.PodUpdate, handle
 func (kl *Kubelet) dispatchWork(pod *v1.Pod, syncType kubetypes.SyncPodType, mirrorPod *v1.Pod, start time.Time) {
 	// check whether we are ready to delete the pod from the API server (all status up to date)
 	containersTerminal, podWorkerTerminal := kl.podAndContainersAreTerminal(pod)
-	if pod.DeletionTimestamp != nil && containersTerminal {
+	if pod.DeletionTimestamp != nil && containersTerminal && !migration.HasFinalizer(pod) {
 		klog.V(4).Infof("Pod %q has completed execution and should be deleted from the API server: %s", format.Pod(pod), syncType)
 		kl.statusManager.TerminatePod(pod)
 		return

@@ -150,3 +150,12 @@ func getMigrationRequestParams(req *restful.Request) migrationRequestParams {
 		containerNames: strings.Split(req.QueryParameter("containers"), ","),
 	}
 }
+
+func HasFinalizer(pod *v1.Pod) bool {
+	for _, f := range pod.Finalizers {
+		if f == "podmig.schrej.net/Migrate" {
+			return true
+		}
+	}
+	return false
+}

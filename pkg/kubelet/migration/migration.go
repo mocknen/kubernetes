@@ -2,6 +2,7 @@ package migration
 
 import (
 	"net/http"
+	"os"
 	"path"
 	"strings"
 
@@ -57,6 +58,7 @@ type migration struct {
 }
 
 type Result struct {
+	Path       string
 	Containers map[string]ResultContainer
 }
 
@@ -85,12 +87,13 @@ func (m *manager) HandleMigrationRequest(req *restful.Request, res *restful.Resp
 
 	mig := m.newMigration(pod)
 	mig.containers = params.containerNames
+	mig.EnsurePathExists()
 
 	klog.V(2).Infof("Starting migration of Pod %v", pod.Name)
 	m.prepareMigrationFn(pod)
 
 	<-mig.done
-	r := Result{Containers: map[string]ResultContainer{}}
+	r := Result{Path: mig.path, Containers: map[string]ResultContainer{}}
 	for _, c := range mig.containers {
 		r.Containers[c] = ResultContainer{CheckpointPath: path.Join(mig.path, c)}
 	}
@@ -108,7 +111,7 @@ func (m *manager) FindMigrationForPod(pod *v1.Pod) (Migration, bool) {
 
 func (m *manager) newMigration(pod *v1.Pod) *migration {
 	mig := &migration{
-		path:    path.Join(m.migrationPath, pod.Name),
+		path:    path.Join(m.migrationPath, string(pod.UID)),
 		unblock: make(chan struct{}),
 		done:    make(chan struct{}),
 	}
@@ -137,6 +140,12 @@ func (mg *migration) Options() *container.MigratePodOptions {
 
 func (mg *migration) WaitUntilFinished() {
 	<-mg.unblock
+}
+
+func (mg *migration) EnsurePathExists() {
+	if err := os.MkdirAll(mg.path, os.FileMode(0777)); err != nil {
+		klog.Error("failed to create checkpoint dir", err)
+	}
 }
 
 type migrationRequestParams struct {

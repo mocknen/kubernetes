@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -65,7 +66,6 @@ func getHTTPClient() (*http.Client, error) {
 	c.Transport = &http.Transport{TLSClientConfig: tlsConfig}
 	return c, nil
 }
-
 
 func (r *Result) DeleteCheckpoint() {
 	if err := os.RemoveAll(r.Path); err != nil {

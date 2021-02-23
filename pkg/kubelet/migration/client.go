@@ -53,7 +53,7 @@ func (m *manager) TriggerPodMigration(pod *v1.Pod) (Result, error) {
 }
 
 func getHTTPClient() (*http.Client, error) {
-	config, err := clientcmd.BuildConfigFromFlags("", "/var/lib/kubelet/kubeconfig")
+	config, err := clientcmd.BuildConfigFromFlags("", "/etc/kubernetes/kubelet.conf")
 	if err != nil {
 		return nil, err
 	}
